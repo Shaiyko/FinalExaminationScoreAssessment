@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import RaterCard from './components/RaterCard';
 import Summary from './components/Summary';
-import { Download, Upload, RotateCcw, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Download, Upload, RotateCcw, FileText, CheckCircle, AlertCircle, X, FileDown } from 'lucide-react';
 import './styles.css';
 
 // Custom Alert Modal Component
@@ -57,6 +57,57 @@ const CustomAlert = ({ isOpen, type = 'success', title, message, onClose, showCo
   );
 };
 
+// PDF Selection Modal Component
+const PDFSelectionModal = ({ isOpen, onClose, onSelect }) => {
+  if (!isOpen) return null;
+
+  const pdfOptions = [
+    {
+      id: 'committee-record',
+      title: 'ບັດບັນທຶກການປ້ອງກັນຈົບຊັ້ນປະລິນຍາຕີຂອງອານຸກຳມະການ',
+      filename: 'ບັດບັນທຶກການປ້ອງກັນຈົບຊັ້ນປະລິນຍາຕີຂອງອານຸກຳມະການ.pdf'
+    },
+    {
+      id: 'defense-scoring',
+      title: 'ການໃຫ້ຄະແນນປ້ອງກັນບົດຈົບຊັ້ນ',
+      filename: 'ການໃຫ້ຄະແນນປ້ອງກັນບົດຈົບຊັ້ນ.pdf'
+    },
+    {
+      id: 'evaluation-scoring',
+      title: 'ການປະເມີນແລະໃຫ້ຄະແນນປ້ອງກັນບົດຈົບຊັ້ນ',
+      filename: 'ການປະເມີນແລະໃຫ້ຄະແນນປ້ອງກັນບົດຈົບຊັ້ນ.pdf'
+    }
+  ];
+
+  return (
+    <div className="alert-overlay" onClick={onClose}>
+      <div className="pdf-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="alert-close" onClick={onClose}>
+          <X size={18} />
+        </button>
+        
+        <div className="pdf-modal-content">
+          <h3 className="pdf-modal-title">ເລືອກແບບຟອມ PDF</h3>
+          <p className="pdf-modal-subtitle">ກະລຸນາເລືອກແບບຟອມ PDF ທີ່ຕ້ອງການດາວໂຫລດ</p>
+          
+          <div className="pdf-options">
+            {pdfOptions.map((option) => (
+              <button
+                key={option.id}
+                className="pdf-option-btn"
+                onClick={() => onSelect(option)}
+              >
+                <FileDown size={20} />
+                <span>{option.title}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
   // Initial data structure
   const initialRaterData = {
@@ -88,6 +139,9 @@ const App = () => {
     showConfirm: false,
     onConfirm: null
   });
+
+  // PDF Modal state
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
 
   // Auto-save to localStorage
   useEffect(() => {
@@ -255,6 +309,32 @@ const App = () => {
     window.print();
   };
 
+  const handlePDFDownload = () => {
+    setPdfModalOpen(true);
+  };
+
+  const handlePDFSelect = (selectedPDF) => {
+    // ปิด modal ก่อน
+    setPdfModalOpen(false);
+    
+    // สร้าง path ไปยังไฟล์ PDF ใน src/pdf folder
+    const pdfPath = `/src/pdf/${selectedPDF.filename}`;
+    
+    // ตรวจสอบว่าไฟล์มีอยู่หรือไม่ แล้วดาวน์โหลด
+    const link = document.createElement('a');
+    link.href = pdfPath;
+    link.download = selectedPDF.filename;
+    link.target = '_blank'; // เปิดในแท็บใหม่หากไม่สามารถดาวน์โหลดได้
+    
+    // ลองดาวน์โหลดไฟล์
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // แสดงข้อความยืนยัน
+    showAlert('success', 'ດາວໂຫລດ PDF', `ໄຟລ์ ${selectedPDF.title} ຖືກດາວໂຫລດແລ້ວ`);
+  };
+
   return (
     <div className="app">
       {/* Custom Alert Modal */}
@@ -266,6 +346,13 @@ const App = () => {
         showConfirm={alert.showConfirm}
         onClose={closeAlert}
         onConfirm={handleConfirm}
+      />
+
+      {/* PDF Selection Modal */}
+      <PDFSelectionModal
+        isOpen={pdfModalOpen}
+        onClose={() => setPdfModalOpen(false)}
+        onSelect={handlePDFSelect}
       />
 
       <div className="no-print">
@@ -292,6 +379,10 @@ const App = () => {
                   style={{ display: 'none' }}
                 />
               </label>
+              <button onClick={handlePDFDownload} className="control-btn pdf-btn">
+                <FileDown size={16} />
+                ດາວໂຫລດ PDF ແບບສອບຖາມທີ່ໃຊ້ໃນການປະເມີນ
+              </button>
             </div>
           </div>
         </header>
@@ -398,6 +489,73 @@ const App = () => {
 
         {/* Print Summary (rendered by Summary component) */}
       </div>
+
+      <style jsx>{`
+        .pdf-modal {
+          background: white;
+          border-radius: 12px;
+          padding: 24px;
+          max-width: 500px;
+          width: 90%;
+          position: relative;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .pdf-modal-content {
+          text-align: center;
+        }
+
+        .pdf-modal-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-bottom: 8px;
+          color: #1f2937;
+        }
+
+        .pdf-modal-subtitle {
+          color: #6b7280;
+          margin-bottom: 24px;
+          font-size: 0.9rem;
+        }
+
+        .pdf-options {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .pdf-option-btn {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px 20px;
+          background: #f8fafc;
+          border: 2px solid #e2e8f0;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-size: 0.95rem;
+          text-align: left;
+        }
+
+        .pdf-option-btn:hover {
+          background: #e2e8f0;
+          border-color: #cbd5e1;
+          transform: translateY(-1px);
+        }
+
+        .pdf-option-btn:active {
+          transform: translateY(0);
+        }
+
+        .pdf-btn {
+          background: #059669 !important;
+        }
+
+        .pdf-btn:hover {
+          background: #047857 !important;
+        }
+      `}</style>
     </div>
   );
 };
