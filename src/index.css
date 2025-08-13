@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'NotoSansLaoLooped';
+  src: url('./font/NotoSansLaoLooped.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+:root {
+  font-family: 'NotoSansLaoLooped', sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: 'NotoSansLaoLooped', sans-serif;
+}
