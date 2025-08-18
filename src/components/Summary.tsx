@@ -1,11 +1,43 @@
-import React from 'react';
 import { avg, weighted, finalScore, toPercent, roundForDisplay, countFilledScores, scoreToGPA } from '../utils/calc';
 
-const Summary = ({ studentData, ratersData, onPrint }) => {
+// Type definitions
+interface StudentData {
+  name: string;
+  studentId: string;
+  department: string;
+  thesisTitle: string;
+}
+
+interface RaterData {
+  sheet1: number[];
+  sheet2: number[];
+}
+
+interface RaterResult {
+  name: string;
+  sheet1Avg: number;
+  sheet2Avg: number;
+  weightedScore: number;
+  isComplete: boolean;
+}
+
+interface GradeInfo {
+  gpa: number;
+  letterGrade: string;
+  meaning: string;
+}
+
+interface SummaryProps {
+  studentData: StudentData;
+  ratersData: RaterData[];
+  onPrint: () => void;
+}
+
+const Summary: React.FC<SummaryProps> = ({ studentData, ratersData }) => {
   // Calculate scores for each rater
-  const raterResults = ratersData.map((rater, index) => {
-    const sheet1Scores = rater.sheet1.filter(score => score >= 1 && score <= 5);
-    const sheet2Scores = rater.sheet2.filter(score => score >= 1 && score <= 5);
+  const raterResults: RaterResult[] = ratersData.map((rater, index) => {
+    const sheet1Scores = rater.sheet1.filter((score: number) => score >= 1 && score <= 5);
+    const sheet2Scores = rater.sheet2.filter((score: number) => score >= 1 && score <= 5);
     
     const sheet1Complete = sheet1Scores.length === 14;
     const sheet2Complete = sheet2Scores.length === 24;
@@ -25,16 +57,16 @@ const Summary = ({ studentData, ratersData, onPrint }) => {
   });
 
   // Calculate final scores
-  const completedRaters = raterResults.filter(r => r.isComplete);
+  const completedRaters = raterResults.filter((r: RaterResult) => r.isComplete);
   const canCalculateFinal = completedRaters.length === 3;
   
   const finalScoreValue = canCalculateFinal ? 
-    finalScore(completedRaters.map(r => r.weightedScore)) : 0;
+    finalScore(completedRaters.map((r: RaterResult) => r.weightedScore)) : 0;
   const percentScore = canCalculateFinal ? toPercent(finalScoreValue) : 0;
-  const gradeInfo = canCalculateFinal ? scoreToGPA(finalScoreValue) : null;
+  const gradeInfo: GradeInfo | null = canCalculateFinal ? scoreToGPA(finalScoreValue) : null;
 
   // Count total filled scores
-  const allSheets = ratersData.flatMap(r => [r.sheet1, r.sheet2]);
+  const allSheets = ratersData.flatMap((r: RaterData) => [r.sheet1, r.sheet2]);
   const filledCount = countFilledScores(allSheets);
 
   return (
@@ -79,7 +111,7 @@ const Summary = ({ studentData, ratersData, onPrint }) => {
             </tr>
           </thead>
           <tbody>
-            {raterResults.map((rater, index) => (
+            {raterResults.map((rater: RaterResult, index: number) => (
               <tr key={index} className={rater.isComplete ? 'complete' : 'incomplete'}>
                 <td>{rater.name}</td>
                 <td>{rater.isComplete ? roundForDisplay(rater.sheet1Avg, 2) : '-.--'}</td>
@@ -102,7 +134,7 @@ const Summary = ({ studentData, ratersData, onPrint }) => {
         {canCalculateFinal ? (
           <div className="score-display">
             <div className="score-item">
-              <span className="score-label">ຄະແນນເຕົມ 5:</span>
+              <span className="score-label">ຄະແນນເຕັມ 5:</span>
               <span className="score-value">{roundForDisplay(finalScoreValue, 2)}</span>
             </div>
             <div className="score-item">
@@ -111,14 +143,14 @@ const Summary = ({ studentData, ratersData, onPrint }) => {
             </div>
             <div className="score-item">
               <span className="score-label">ເກດ GPA:</span>
-              <span className="score-value">{gradeInfo.gpa} ({gradeInfo.letterGrade})</span>
+              <span className="score-value">{gradeInfo!.gpa} ({gradeInfo!.letterGrade})</span>
             </div>
             <div className="grade-meaning">
-              <span className="meaning-text">{gradeInfo.meaning}</span>
+              <span className="meaning-text">{gradeInfo!.meaning}</span>
             </div>
             <div className="calculation-detail">
               <small>
-                ຄຳນວນຈາກ: ({raterResults.map(r => roundForDisplay(r.weightedScore, 2)).join(' + ')}) ÷ 3 = {roundForDisplay(finalScoreValue, 2)}
+                ຄຳນວນຈາກ: ({raterResults.map((r: RaterResult) => roundForDisplay(r.weightedScore, 2)).join(' + ')}) ÷ 3 = {roundForDisplay(finalScoreValue, 2)}
               </small>
             </div>
           </div>

@@ -1,15 +1,34 @@
-import React from 'react';
 import { avg, weighted, roundForDisplay } from '../utils/calc';
 
-const RaterCard = ({ raterIndex, data, onUpdate, isExpanded, onToggle }) => {
+// Type definitions
+interface RaterData {
+  sheet1: number[];
+  sheet2: number[];
+}
+
+interface RaterCardProps {
+  raterIndex: number;
+  data: RaterData;
+  onUpdate: (raterIndex: number, data: RaterData) => void;
+  isExpanded: boolean;
+  onToggle: () => void;
+}
+
+const RaterCard: React.FC<RaterCardProps> = ({ 
+  raterIndex, 
+  data, 
+  onUpdate, 
+  isExpanded, 
+  onToggle 
+}) => {
   const raterName = `ກຳມະການ #${raterIndex + 1}`;
   
   // Calculate live statistics
-  const sheet1Scores = data.sheet1.filter(score => score >= 1 && score <= 5);
-  const sheet2Scores = data.sheet2.filter(score => score >= 1 && score <= 5);
+  const sheet1Scores = data.sheet1.filter((score: number) => score >= 1 && score <= 5);
+  const sheet2Scores = data.sheet2.filter((score: number) => score >= 1 && score <= 5);
   
-  const sheet1Sum = sheet1Scores.reduce((sum, score) => sum + score, 0);
-  const sheet2Sum = sheet2Scores.reduce((sum, score) => sum + score, 0);
+  const sheet1Sum = sheet1Scores.reduce((sum: number, score: number) => sum + score, 0);
+  const sheet2Sum = sheet2Scores.reduce((sum: number, score: number) => sum + score, 0);
   
   const sheet1Avg = sheet1Scores.length === 14 ? avg(sheet1Scores) : 0;
   const sheet2Avg = sheet2Scores.length === 24 ? avg(sheet2Scores) : 0;
@@ -18,26 +37,26 @@ const RaterCard = ({ raterIndex, data, onUpdate, isExpanded, onToggle }) => {
     ? weighted(sheet1Avg, sheet2Avg) 
     : 0;
 
-  const handleScoreChange = (sheet, index, value) => {
+  const handleScoreChange = (sheet: keyof RaterData, index: number, value: string) => {
     const score = value === '' ? 0 : parseInt(value);
     const newData = { ...data };
     newData[sheet][index] = score;
     onUpdate(raterIndex, newData);
   };
 
-  const fillSheet = (sheet, value) => {
+  const fillSheet = (sheet: keyof RaterData, value: number) => {
     const newData = { ...data };
     newData[sheet] = newData[sheet].map(() => value);
     onUpdate(raterIndex, newData);
   };
 
-  const clearSheet = (sheet) => {
+  const clearSheet = (sheet: keyof RaterData) => {
     const newData = { ...data };
     newData[sheet] = newData[sheet].map(() => 0);
     onUpdate(raterIndex, newData);
   };
 
-  const renderScoreInput = (sheet, index) => {
+  const renderScoreInput = (sheet: keyof RaterData, index: number) => {
     const score = data[sheet][index];
     const isValid = score >= 1 && score <= 5;
     

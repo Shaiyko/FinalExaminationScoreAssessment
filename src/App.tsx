@@ -1,11 +1,70 @@
-import React, { useState, useEffect } from 'react';
-import RaterCard from './components/RaterCard';
-import Summary from './components/Summary';
-import { Download, Upload, RotateCcw, FileText, CheckCircle, AlertCircle, X, FileDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import RaterCard from './components/RaterCard.tsx';
+import Summary from './components/Summary.tsx';
+import { Download, Upload, RotateCcw, CheckCircle, AlertCircle, X, FileDown } from 'lucide-react';
 import './styles.css';
 
+// Type definitions
+interface Department {
+  id: number;
+  name: string;
+  short: string;
+  icon: string;
+}
+
+interface StudentData {
+  name: string;
+  studentId: string;
+  department: string;
+  thesisTitle: string;
+}
+
+interface RaterData {
+  sheet1: number[];
+  sheet2: number[];
+}
+
+interface AlertState {
+  isOpen: boolean;
+  type: 'success' | 'error' | 'confirm';
+  title: string;
+  message: string;
+  showConfirm: boolean;
+  onConfirm: (() => void) | null;
+}
+
+interface CustomAlertProps {
+  isOpen: boolean;
+  type?: 'success' | 'error' | 'confirm';
+  title: string;
+  message: string;
+  onClose: () => void;
+  showConfirm?: boolean;
+  onConfirm?: () => void;
+}
+
+interface PDFOption {
+  id: string;
+  title: string;
+  filename: string;
+}
+
+interface PDFSelectionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (option: PDFOption) => void;
+}
+
 // Custom Alert Modal Component
-const CustomAlert = ({ isOpen, type = 'success', title, message, onClose, showConfirm = false, onConfirm }) => {
+const CustomAlert: React.FC<CustomAlertProps> = ({ 
+  isOpen, 
+  type = 'success', 
+  title, 
+  message, 
+  onClose, 
+  showConfirm = false, 
+  onConfirm 
+}) => {
   if (!isOpen) return null;
 
   const getIcon = () => {
@@ -58,10 +117,10 @@ const CustomAlert = ({ isOpen, type = 'success', title, message, onClose, showCo
 };
 
 // PDF Selection Modal Component
-const PDFSelectionModal = ({ isOpen, onClose, onSelect }) => {
+const PDFSelectionModal: React.FC<PDFSelectionModalProps> = ({ isOpen, onClose, onSelect }) => {
   if (!isOpen) return null;
 
-  const pdfOptions = [
+  const pdfOptions: PDFOption[] = [
     {
       id: 'committee-record',
       title: 'ບັດບັນທຶກການປ້ອງກັນຈົບຊັ້ນປະລິນຍາຕີຂອງອານຸກຳມະການ',
@@ -81,20 +140,20 @@ const PDFSelectionModal = ({ isOpen, onClose, onSelect }) => {
 
   return (
     <div className="alert-overlay" onClick={onClose}>
-      <div className="pdf-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4 relative shadow-xl" onClick={(e) => e.stopPropagation()}>
         <button className="alert-close" onClick={onClose}>
           <X size={18} />
         </button>
         
-        <div className="pdf-modal-content">
-          <h3 className="pdf-modal-title">ເລືອກແບບຟອມ PDF</h3>
-          <p className="pdf-modal-subtitle">ກະລຸນາເລືອກແບບຟອມ PDF ທີ່ຕ້ອງການດາວໂຫລດ</p>
+        <div className="text-center">
+          <h3 className="text-2xl font-semibold mb-2 text-gray-800">ເລືອກແບບຟອມ PDF</h3>
+          <p className="text-gray-600 mb-6 text-sm">ກະລຸນາເລືອກແບບຟອມ PDF ທີ່ຕ້ອງການດາວໂຫລດ</p>
           
-          <div className="pdf-options">
+          <div className="flex flex-col gap-3">
             {pdfOptions.map((option) => (
               <button
                 key={option.id}
-                className="pdf-option-btn"
+                className="flex items-center gap-3 p-4 bg-slate-50 border-2 border-slate-200 rounded-lg cursor-pointer transition-all duration-200 text-sm text-left hover:bg-slate-200 hover:border-slate-300 hover:-translate-y-0.5 active:translate-y-0"
                 onClick={() => onSelect(option)}
               >
                 <FileDown size={20} />
@@ -108,30 +167,76 @@ const PDFSelectionModal = ({ isOpen, onClose, onSelect }) => {
   );
 };
 
-const App = () => {
+const App: React.FC = () => {
+  // Department data
+  const departments: Department[] = [
+    {
+      id: 1,
+      name: "ສາຂາການບໍລິຫານສາຂາວິຊາ ບໍລິຫານ ທຸລະກິດຕໍ່ເນື່ອງ",
+      short: "ບໍລິຫານທຸລະກິດ",
+      icon: "💼",
+    },
+    {
+      id: 2,
+      name: "ສາຂາວິຊາ ການຄ້າເອເລັກໂຕນິກ (ຄອມພິວເຕອທຸລະກິດ)",
+      short: "E-Commerce",
+      icon: "💻",
+    },
+    {
+      id: 3,
+      name: "ສາຂາວິຊາ ຜູ້ປະກອບການ",
+      short: "ຜູ້ປະກອບການ",
+      icon: "🚀",
+    },
+    {
+      id: 4,
+      name: "ສາຂາວິຊາ ພາສາອັງກິດ",
+      short: "ພາສາອັງກິດ",
+      icon: "🇬🇧",
+    },
+    {
+      id: 5,
+      name: "ສາຂາວິຊາ ວິຊະວະກຳຊອບແວ",
+      short: "ວິຊະວະກຳຊອບແວ",
+      icon: "⚙️",
+    },
+    {
+      id: 6,
+      name: "ສາຂາວິຊາ ບໍລິຫານ ທຸລະກິດ",
+      short: "ບໍລິຫານ",
+      icon: "📊",
+    },
+    {
+      id: 7,
+      name: "ສາຂາວິຊາ ພາສາອັງກິດຕໍ່ເນື່ອງ",
+      short: "ພາສາອັງກິດຕໍ່ເນື່ອງ",
+      icon: "🌐",
+    },
+  ];
+
   // Initial data structure
-  const initialRaterData = {
+  const initialRaterData: RaterData = {
     sheet1: Array(14).fill(0),
     sheet2: Array(24).fill(0)
   };
 
-  const [studentData, setStudentData] = useState({
+  const [studentData, setStudentData] = useState<StudentData>({
     name: '',
     studentId: '',
     department: '',
     thesisTitle: ''
   });
 
-  const [ratersData, setRatersData] = useState([
+  const [ratersData, setRatersData] = useState<RaterData[]>([
     { ...initialRaterData },
     { ...initialRaterData },
     { ...initialRaterData }
   ]);
 
-  const [expandedRaters, setExpandedRaters] = useState([true, false, false]);
+  const [expandedRaters, setExpandedRaters] = useState<boolean[]>([true, false, false]);
 
   // Alert state
-  const [alert, setAlert] = useState({
+  const [alert, setAlert] = useState<AlertState>({
     isOpen: false,
     type: 'success',
     title: '',
@@ -141,7 +246,7 @@ const App = () => {
   });
 
   // PDF Modal state
-  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState<boolean>(false);
 
   // Auto-save to localStorage
   useEffect(() => {
@@ -171,7 +276,13 @@ const App = () => {
   }, []);
 
   // Alert helper functions
-  const showAlert = (type, title, message, showConfirm = false, onConfirm = null) => {
+  const showAlert = (
+    type: 'success' | 'error' | 'confirm', 
+    title: string, 
+    message: string, 
+    showConfirm: boolean = false, 
+    onConfirm: (() => void) | null = null
+  ) => {
     setAlert({
       isOpen: true,
       type,
@@ -200,14 +311,14 @@ const App = () => {
     closeAlert();
   };
 
-  const handleStudentDataChange = (field, value) => {
+  const handleStudentDataChange = (field: keyof StudentData, value: string) => {
     setStudentData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleRaterUpdate = (raterIndex, data) => {
+  const handleRaterUpdate = (raterIndex: number, data: RaterData) => {
     setRatersData(prev => {
       const newData = [...prev];
       newData[raterIndex] = data;
@@ -215,7 +326,7 @@ const App = () => {
     });
   };
 
-  const toggleRater = (raterIndex) => {
+  const toggleRater = (raterIndex: number) => {
     setExpandedRaters(prev => {
       const newExpanded = [...prev];
       newExpanded[raterIndex] = !newExpanded[raterIndex];
@@ -275,21 +386,22 @@ const App = () => {
     showAlert('success', 'ບັນທຶກສຳເລັດ', 'ໄຟລ์ JSON ຖືກດາວໂຫລດແລ້ວ');
   };
 
-  const handleLoadJSON = (event) => {
-    const file = event.target.files[0];
+  const handleLoadJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = JSON.parse(e.target.result);
+        if (!e.target?.result) return;
+        const data = JSON.parse(e.target.result as string);
         
         if (data.student) {
           setStudentData(data.student);
         }
         
         if (data.raters && data.raters.length === 3) {
-          const loadedRaters = data.raters.map(rater => ({
+          const loadedRaters = data.raters.map((rater: any) => ({
             sheet1: rater.sheet1 || Array(14).fill(0),
             sheet2: rater.sheet2 || Array(24).fill(0)
           }));
@@ -298,7 +410,8 @@ const App = () => {
         
         showAlert('success', 'ໂຫຼດສຳເລັດ', 'ຂໍ້ມູນຖືກໂຫຼດເຂົ້າສູ່ລະບົບແລ້ວ');
       } catch (error) {
-        showAlert('error', 'ຜິດພາດ', `ຟາຍ JSON ບໍ່ຖືກຕ້ອງ: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        showAlert('error', 'ຜິດພາດ', `ຟາຍ JSON ບໍ່ຖືກຕ້ອງ: ${errorMessage}`);
       }
     };
     reader.readAsText(file);
@@ -313,7 +426,7 @@ const App = () => {
     setPdfModalOpen(true);
   };
 
-  const handlePDFSelect = (selectedPDF) => {
+  const handlePDFSelect = (selectedPDF: PDFOption) => {
     // ปิด modal ก่อน
     setPdfModalOpen(false);
     
@@ -379,7 +492,7 @@ const App = () => {
                   style={{ display: 'none' }}
                 />
               </label>
-              <button onClick={handlePDFDownload} className="control-btn pdf-btn">
+              <button onClick={handlePDFDownload} className="control-btn pdf-btn bg-emerald-600 hover:bg-emerald-700">
                 <FileDown size={16} />
                 ດາວໂຫລດ PDF ແບບສອບຖາມທີ່ໃຊ້ໃນການປະເມີນ
               </button>
@@ -411,12 +524,18 @@ const App = () => {
             </div>
             <div className="form-group">
               <label>ສາຂາວິຊາ</label>
-              <input
-                type="text"
+              <select
                 value={studentData.department}
                 onChange={(e) => handleStudentDataChange('department', e.target.value)}
-                placeholder="ລະບຸສາຂາວິຊາ"
-              />
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">ເລືອກສາຂາວິຊາ</option>
+                {departments.map((dept) => (
+                  <option key={dept.id} value={dept.short}>
+                    {dept.icon} {dept.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="form-group full-width">
               <label>ຫົວຂໍ້ບົດຈົບຊັ້ນ</label>
@@ -489,73 +608,6 @@ const App = () => {
 
         {/* Print Summary (rendered by Summary component) */}
       </div>
-
-      <style jsx>{`
-        .pdf-modal {
-          background: white;
-          border-radius: 12px;
-          padding: 24px;
-          max-width: 500px;
-          width: 90%;
-          position: relative;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-
-        .pdf-modal-content {
-          text-align: center;
-        }
-
-        .pdf-modal-title {
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin-bottom: 8px;
-          color: #1f2937;
-        }
-
-        .pdf-modal-subtitle {
-          color: #6b7280;
-          margin-bottom: 24px;
-          font-size: 0.9rem;
-        }
-
-        .pdf-options {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .pdf-option-btn {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 16px 20px;
-          background: #f8fafc;
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-size: 0.95rem;
-          text-align: left;
-        }
-
-        .pdf-option-btn:hover {
-          background: #e2e8f0;
-          border-color: #cbd5e1;
-          transform: translateY(-1px);
-        }
-
-        .pdf-option-btn:active {
-          transform: translateY(0);
-        }
-
-        .pdf-btn {
-          background: #059669 !important;
-        }
-
-        .pdf-btn:hover {
-          background: #047857 !important;
-        }
-      `}</style>
     </div>
   );
 };
