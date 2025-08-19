@@ -1,4 +1,4 @@
-import { avg, weighted, finalScore, toPercent, roundForDisplay, countFilledScores, scoreToGPA } from '../utils/calc';
+import { avg, weighted, finalScore, toPercent, roundForDisplay, scoreToGPA } from '../utils/calc';
 
 // Type definitions
 interface StudentData {
@@ -19,6 +19,9 @@ interface RaterResult {
   sheet2Avg: number;
   weightedScore: number;
   isComplete: boolean;
+  totalItems: number;
+  zeroItems: number;
+  nonZeroItems: number;
 }
 
 interface GradeInfo {
@@ -34,25 +37,37 @@ interface SummaryProps {
 }
 
 const Summary: React.FC<SummaryProps> = ({ studentData, ratersData }) => {
-  // Calculate scores for each rater
+  // Calculate scores for each rater with detailed breakdown
   const raterResults: RaterResult[] = ratersData.map((rater, index) => {
-    const sheet1Scores = rater.sheet1.filter((score: number) => score >= 1 && score <= 5);
-    const sheet2Scores = rater.sheet2.filter((score: number) => score >= 1 && score <= 5);
+    // Include 0 as valid score (no points for that item) - range 0-5
+    const sheet1Scores = rater.sheet1.filter((score: number) => score >= 0 && score <= 5);
+    const sheet2Scores = rater.sheet2.filter((score: number) => score >= 0 && score <= 5);
     
+    // Check completion based on having all items filled (including zeros)
     const sheet1Complete = sheet1Scores.length === 14;
     const sheet2Complete = sheet2Scores.length === 24;
     const isComplete = sheet1Complete && sheet2Complete;
     
+    // Calculate averages including zeros in the calculation
     const sheet1Avg = isComplete ? avg(sheet1Scores) : 0;
     const sheet2Avg = isComplete ? avg(sheet2Scores) : 0;
     const weightedScore = isComplete ? weighted(sheet1Avg, sheet2Avg) : 0;
+    
+    // Count zeros for this rater
+    const sheet1Zeros = rater.sheet1.filter(score => score === 0).length;
+    const sheet2Zeros = rater.sheet2.filter(score => score === 0).length;
+    const totalZeros = sheet1Zeros + sheet2Zeros;
+    const nonZeroItems = (sheet1Scores.length - sheet1Zeros) + (sheet2Scores.length - sheet2Zeros);
     
     return {
       name: `ກຳມະການ #${index + 1}`,
       sheet1Avg,
       sheet2Avg,
       weightedScore,
-      isComplete
+      isComplete,
+      totalItems: sheet1Scores.length + sheet2Scores.length,
+      zeroItems: totalZeros,
+      nonZeroItems: nonZeroItems
     };
   });
 
@@ -65,9 +80,31 @@ const Summary: React.FC<SummaryProps> = ({ studentData, ratersData }) => {
   const percentScore = canCalculateFinal ? toPercent(finalScoreValue) : 0;
   const gradeInfo: GradeInfo | null = canCalculateFinal ? scoreToGPA(finalScoreValue) : null;
 
-  // Count total filled scores
+  // Count total filled scores with detailed breakdown
+  const getScoreBreakdown = (sheets: number[][]) => {
+    let totalFilled = 0;
+    let zeroCount = 0;
+    let nonZeroCount = 0;
+    
+    sheets.forEach(sheet => {
+      sheet.forEach(score => {
+        if (score >= 0 && score <= 5) {
+          totalFilled++;
+          if (score === 0) {
+            zeroCount++;
+          } else {
+            nonZeroCount++;
+          }
+        }
+      });
+    });
+    
+    return { totalFilled, zeroCount, nonZeroCount };
+  };
+  
   const allSheets = ratersData.flatMap((r: RaterData) => [r.sheet1, r.sheet2]);
-  const filledCount = countFilledScores(allSheets);
+  const scoreBreakdown = getScoreBreakdown(allSheets);
+  const { totalFilled: filledCount, zeroCount, nonZeroCount } = scoreBreakdown;
 
   return (
     <div className="summary-section">
@@ -80,7 +117,12 @@ const Summary: React.FC<SummaryProps> = ({ studentData, ratersData }) => {
               style={{ width: `${(filledCount / 114) * 100}%` }}
             ></div>
           </div>
-          <span>ກອກແລ້ວ {filledCount}/114 ຂໍ້</span>
+          <div className="progress-details">
+            <span>ກອກແລ້ວ {filledCount}/114 ຂໍ້</span>
+            <span className="score-breakdown">
+              • ມີຄະແນນ: {nonZeroCount} ຂໍ້ • ຄະແນນ 0: {zeroCount} ຂໍ້
+            </span>
+          </div>
         </div>
       </div>
 
@@ -107,7 +149,7 @@ const Summary: React.FC<SummaryProps> = ({ studentData, ratersData }) => {
               <th>ສະເລ່ຍເອກະສານ 1</th>
               <th>ສະເລ່ຍເອກະສານ 2</th>
               <th>ຄະແນນລວມ</th>
-              <th>ສະຖານະ</th>
+              <th>ສະຖານະ / ລາຍລະອຽດ</th>
             </tr>
           </thead>
           <tbody>
@@ -118,9 +160,23 @@ const Summary: React.FC<SummaryProps> = ({ studentData, ratersData }) => {
                 <td>{rater.isComplete ? roundForDisplay(rater.sheet2Avg, 2) : '-.--'}</td>
                 <td>{rater.isComplete ? roundForDisplay(rater.weightedScore, 2) : '-.--'}</td>
                 <td>
-                  <span className={`status-badge ${rater.isComplete ? 'complete' : 'incomplete'}`}>
-                    {rater.isComplete ? '✅ ສົມບູນ' : '❌ ບໍ່ສົມບູນ'}
-                  </span>
+                  <div className="status-details">
+                    <span className={`status-badge ${rater.isComplete ? 'complete' : 'incomplete'}`}>
+                      {rater.isComplete ? '✅ ສົມບູນ' : '❌ ບໍ່ສົມບູນ'}
+                    </span>
+                    {rater.isComplete && (
+                      <div className="score-details">
+                        <small>
+                          ກອກ: {rater.totalItems}/38 • ມີຄະແນນ: {rater.nonZeroItems} • ຄະແນນ 0: {rater.zeroItems}
+                        </small>
+                      </div>
+                    )}
+                    {!rater.isComplete && (
+                      <div className="incomplete-details">
+                        <small>ເຫຼືອ {38 - rater.totalItems} ຂໍ້</small>
+                      </div>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -158,6 +214,16 @@ const Summary: React.FC<SummaryProps> = ({ studentData, ratersData }) => {
           <div className="incomplete-message">
             <p>ກະລຸນາໃສ່ຂໍ້ມູນໃຫ້ຄົບທັງທັ້ງ 3 ກຳມະການເພື່ອທຳການຄຳນວນຄະແນນສຸກທ້າຍ</p>
             <p>ສະຖານະປັດຈຸບັນ: ກຳມະການທີ່ກອກສົມບູນ {completedRaters.length}/3 ທ່ານ</p>
+            <div className="overall-progress">
+              <p><strong>ຄວາມຄືບໜ້າລວມ:</strong></p>
+              <p>• ກອກແລ້ວທັງຫມົດ: {filledCount}/114 ຂໍ້ ({Math.round((filledCount/114)*100)}%)</p>
+              <p>• ມີຄະແນນ (1-5): {nonZeroCount} ຂໍ້</p>
+              <p>• ຄະແນນ 0: {zeroCount} ຂໍ້</p>
+              <p>• ຍັງບໍ່ໄດ້ກອກ: {114 - filledCount} ຂໍ້</p>
+            </div>
+            <div className="note-about-zero">
+              <small>หมายเหตุ: สามารถใส่ 0 ได้สำหรับข้อที่ไม่มีคะแนน (จะนับรวมในการคำนวณ)</small>
+            </div>
           </div>
         )}
       </div>
